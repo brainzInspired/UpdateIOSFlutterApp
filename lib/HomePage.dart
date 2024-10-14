@@ -187,7 +187,8 @@ class _HomePageState extends State<HomePage> {
     final afterupdate = await Utilities.getAppVersion();
     previousAppStoreVersion = afterupdate.toString();
     final int timestamp = DateTime.now().millisecondsSinceEpoch;
-    final String url = 'https://itunes.apple.com/lookup?bundleId=com.maths.mathsapp&time=$timestamp';
+    //com.example.update change this package name with your packagename
+    final String url = 'https://itunes.apple.com/lookup?bundleId=com.example.update&time=$timestamp';
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -218,7 +219,7 @@ class _HomePageState extends State<HomePage> {
 
   void _launchAppStore() async {
     const appStoreUrl =
-        'https://apps.apple.com/app/6698865476'; // Replace with actual App Store URL
+        ''; // Replace with actual App Store URL
     if (await canLaunchUrl(Uri.parse(appStoreUrl))) {
       await launchUrl(Uri.parse(appStoreUrl));
     }
@@ -259,7 +260,8 @@ class _HomePageState extends State<HomePage> {
     final afterupdate = await Utilities.getAppVersionAndroid();
     previousAppStoreVersion = afterupdate.toString();
     final int timestamp = DateTime.now().millisecondsSinceEpoch;
-    final String url = 'https://play.google.com/store/apps/details?id=com.maths.mathsapp&time=$timestamp';
+    //com.example.update change this package name with your packagename
+    final String url = 'https://play.google.com/store/apps/details?id=com.example.update&time=$timestamp';
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -274,7 +276,7 @@ class _HomePageState extends State<HomePage> {
             List<String> newversion = appshow_version.split('.');
             int newerversion = int.parse(newversion[1]);
             if(newerversion > olderversion){
-              _showUpdateDialog(appshow_version);
+              _showUpdateAndroidDialog(appshow_version);
             }
           }
         }
@@ -286,5 +288,44 @@ class _HomePageState extends State<HomePage> {
       appshow_version;
       previousAppStoreVersion;
     });
+  }
+
+  void _showUpdateAndroidDialog(String newVersion) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Prevent dismissing the dialog without updating
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Update Available"),
+          content: Text(
+            "A new version ($newVersion) is available. Please update to the latest version.\n"
+                "If you don't want to update the application by clicking the update button, then next time you will have to manually update the application on the app store.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop(); // Disable this line if you want to force the update
+              },
+              child: Text("Later"),
+            ),
+            TextButton(
+              onPressed: () async {
+                _launchAppStoreAndroid(); // Redirect to App Store
+              },
+              child: Text("Update"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  //here set your android launcher url where showing update button means your play store url
+  void _launchAppStoreAndroid() async {
+    const appStoreUrl =
+        ''; // Replace with actual Play Store URL
+    if (await canLaunchUrl(Uri.parse(appStoreUrl))) {
+      await launchUrl(Uri.parse(appStoreUrl));
+    }
   }
 }
