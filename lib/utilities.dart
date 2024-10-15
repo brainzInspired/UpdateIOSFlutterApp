@@ -17,34 +17,6 @@ class Utilities {
       return null;
     }
   }
-
-  static Future<String?> isStoreversionData(String json) async {
-    if (Platform.isAndroid) {
-    } else if (Platform.isIOS) {
-      platformChannel.invokeMethod('saveversion', {"previousAppStoreVersion": json});
-    }
-  }
-
-  static Future<String?> isRetriveversionData() async {
-    if (Platform.isAndroid) {
-    } else if (Platform.isIOS) {
-      String Stringlogin = await platformChannel.invokeMethod("retriveversion");
-      if (Stringlogin.isNotEmpty && Stringlogin.toString().length > 0) {
-        String jsonvalue = Stringlogin.toString();
-        return jsonvalue;
-      } else {
-        return "";
-      }
-    }
-  }
-
-
-  static Future<String?> removeLogin() async {
-    if (Platform.isAndroid) {
-    } else if (Platform.isIOS) {
-      await platformChannel.invokeMethod("removeversion");
-    }
-  }
   static Future<String> getAppVersion() async {
     try {
       final String version = await platformChannel.invokeMethod('getAppVersion');

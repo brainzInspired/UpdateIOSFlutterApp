@@ -1,6 +1,6 @@
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:math_expressions/math_expressions.dart';
 import 'buttons.dart';
 import 'package:http/http.dart' as http;
@@ -46,7 +46,9 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     if(Platform.isAndroid){
-      checkForUpdateAndroid();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        checkForUpdateAndroid();
+      });
     }else{
       checkForUpdate();
     }
@@ -219,7 +221,8 @@ class _HomePageState extends State<HomePage> {
 
   void _launchAppStore() async {
     const appStoreUrl =
-        ''; // Replace with actual App Store URL
+        'https://apps.apple.com/app/12345689'; // Replace with actual App Store URL
+     // ("Go to your app store-> Distribution-> App information -> General Information get "Apple_id" replace this "12345689" with your actual appleid)
     if (await canLaunchUrl(Uri.parse(appStoreUrl))) {
       await launchUrl(Uri.parse(appStoreUrl));
     }
@@ -257,37 +260,22 @@ class _HomePageState extends State<HomePage> {
   }
 
   void checkForUpdateAndroid() async {
-    final afterupdate = await Utilities.getAppVersionAndroid();
-    previousAppStoreVersion = afterupdate.toString();
-    final int timestamp = DateTime.now().millisecondsSinceEpoch;
-    //com.example.update change this package name with your packagename
-    final String url = 'https://play.google.com/store/apps/details?id=com.example.update&time=$timestamp';
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['resultCount'] > 0) {
-          final appStoreVersion = data['results'][0]['version'];
-          appshow_version = appStoreVersion.toString();
-          if(previousAppStoreVersion.isNotEmpty){
-            List<String> oldversion = previousAppStoreVersion.split('.');
-            int olderversion = int.parse(oldversion[1]);
-            await Future.delayed(Duration(seconds: 2));
-            List<String> newversion = appshow_version.split('.');
-            int newerversion = int.parse(newversion[1]);
-            if(newerversion > olderversion){
-              _showUpdateAndroidDialog(appshow_version);
-            }
-          }
-        }
+    // previousAppStoreVersion = '1.0.5' this is pubspec.yaml "version: 1.0.5+1";
+    // appshow_version = '1.0.6  this is pubspec.yaml of Play Store "version: 1.0.6+1"';
+    final previous = await Utilities.getAppVersionAndroid();
+    previousAppStoreVersion = previous.toString();
+    print("object"+previousAppStoreVersion);
+    final playstore = await getAndroidVersionFromGooglePlay('com.example.tips'); //"com.example.tips" replace with your package name this version means
+    // when your update your application change the version of pubspec.yaml file like "version: 1.0.0+1" if currect is this then next vertion put "version: 1.0.1+1"
+    appshow_version = playstore.toString();
+    List<String> previousVersionParts = previousAppStoreVersion.split('.');
+    List<String> currentVersionParts = appshow_version.split('.');
+    // Parse the third number from each version
+    int oldVersion = int.parse(previousVersionParts[2]);
+    int newVersion = int.parse(currentVersionParts[2]);
+      if (newVersion > oldVersion) {
+        _showUpdateAndroidDialog(appshow_version); // Show the update dialog if needed
       }
-    } catch (e) {
-      print('Error checking for update: $e');
-    }
-    setState(() {
-      appshow_version;
-      previousAppStoreVersion;
-    });
   }
 
   void _showUpdateAndroidDialog(String newVersion) {
@@ -310,7 +298,7 @@ class _HomePageState extends State<HomePage> {
             ),
             TextButton(
               onPressed: () async {
-                _launchAppStoreAndroid(); // Redirect to App Store
+                _launchPlayStoreAndroid(); // Redirect to App Store
               },
               child: Text("Update"),
             ),
@@ -321,11 +309,36 @@ class _HomePageState extends State<HomePage> {
   }
 
   //here set your android launcher url where showing update button means your play store url
-  void _launchAppStoreAndroid() async {
+  void _launchPlayStoreAndroid() async {
     const appStoreUrl =
-        ''; // Replace with actual Play Store URL
+        'https://play.google.com/store/apps/details?id=com.example.App'; // Replace with actual Play Store URL
     if (await canLaunchUrl(Uri.parse(appStoreUrl))) {
       await launchUrl(Uri.parse(appStoreUrl));
     }
+  }
+
+  Future<String?> getAndroidVersionFromGooglePlay(String package) async {
+    final Dio dio = Dio();
+    final response = await dio.get('https://play.google.com/store/apps/details?id=com.example.App');
+    // Look for all ,[[[ pattern and split all matches into an array
+    List<String> splitted = response.data.split(',[[["');
+    // In each element, remove everything after "]] pattern
+    List<String> removedLast = splitted.map((String e) {
+      return e.split('"]],').first;
+    }).toList();
+    // We are looking for a version in the array that satisfies the regular expression:
+    // starts with one or more digits (\d), followed by a period (.), followed by one or more digits.
+    List<String> filteredByVersion = removedLast
+        .map((String e) {
+      RegExp regex = RegExp(r'^\d+\.\d+');
+      if (regex.hasMatch(e)) {
+        return e;
+      }
+    }).whereType<String>()
+    .toList();
+    if (filteredByVersion.length == 1) {
+      return filteredByVersion.first;
+    }
+    return null;
   }
 }
