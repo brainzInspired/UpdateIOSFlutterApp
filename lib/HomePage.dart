@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:math_expressions/math_expressions.dart';
 import 'buttons.dart';
 import 'package:http/http.dart' as http;
@@ -260,39 +261,42 @@ class _HomePageState extends State<HomePage> {
   }
 
   void checkForUpdateAndroid() async {
-    // previousAppStoreVersion = '1.0.5' this is pubspec.yaml "version: 1.0.5+1";
-    // appshow_version = '1.0.6  this is pubspec.yaml of Play Store "version: 1.0.6+1"';
     final previous = await Utilities.getAppVersionAndroid();
     previousAppStoreVersion = previous.toString();
     print("object"+previousAppStoreVersion);
-    final playstore = await getAndroidVersionFromGooglePlay('com.example.tips'); //"com.example.tips" replace with your package name this version means
-    // when your update your application change the version of pubspec.yaml file like "version: 1.0.0+1" if currect is this then next vertion put "version: 1.0.1+1"
+    final playstore = await Utilities.getAndroidVersionFromGooglePlay('com.maths.mathsapp'); //"com.example.tips" replace with your package name this version means
     appshow_version = playstore.toString();
     List<String> previousVersionParts = previousAppStoreVersion.split('.');
     List<String> currentVersionParts = appshow_version.split('.');
     // Parse the third number from each version
     int oldVersion = int.parse(previousVersionParts[2]);
     int newVersion = int.parse(currentVersionParts[2]);
-      if (newVersion > oldVersion) {
-        _showUpdateAndroidDialog(appshow_version); // Show the update dialog if needed
-      }
+    if (newVersion > oldVersion) {
+      _showUpdateAndroidDialog(appshow_version); // Show the update dialog if needed
+    }else{
+      //getApplogo(); if update not avcailable then call your service here
+
+    }
   }
 
+  BuildContext? dialogcontext;
   void _showUpdateAndroidDialog(String newVersion) {
     showDialog(
       context: context,
       barrierDismissible: false, // Prevent dismissing the dialog without updating
       builder: (BuildContext context) {
+        dialogcontext = context;
         return AlertDialog(
           title: Text("Update Available"),
           content: Text(
-            "A new version ($newVersion) is available. Please update to the latest version.\n"
-                "If you don't want to update the application by clicking the update button, then next time you will have to manually update the application on the app store.",
+            "A new version ($newVersion) is available and required to continue using the application. "
+                "Please update to the latest version now to access all features and ensure the app functions properly\n"
+                "Updating is mandatory thank you for your cooperation!",
           ),
           actions: [
             TextButton(
               onPressed: () async {
-                Navigator.of(context).pop(); // Disable this line if you want to force the update
+                SystemNavigator.pop();
               },
               child: Text("Later"),
             ),
@@ -308,37 +312,16 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  //here set your android launcher url where showing update button means your play store url
+  //i have created another method also "launchAppStore" this one
+  // because if "canLaunchUrl" this library is depricated then come to the cache so this option is also available for you if you dont want to use "canLaunchUrl"
   void _launchPlayStoreAndroid() async {
-    const appStoreUrl =
-        'https://play.google.com/store/apps/details?id=com.example.App'; // Replace with actual Play Store URL
-    if (await canLaunchUrl(Uri.parse(appStoreUrl))) {
-      await launchUrl(Uri.parse(appStoreUrl));
-    }
-  }
-
-  Future<String?> getAndroidVersionFromGooglePlay(String package) async {
-    final Dio dio = Dio();
-    final response = await dio.get('https://play.google.com/store/apps/details?id=com.example.App');
-    // Look for all ,[[[ pattern and split all matches into an array
-    List<String> splitted = response.data.split(',[[["');
-    // In each element, remove everything after "]] pattern
-    List<String> removedLast = splitted.map((String e) {
-      return e.split('"]],').first;
-    }).toList();
-    // We are looking for a version in the array that satisfies the regular expression:
-    // starts with one or more digits (\d), followed by a period (.), followed by one or more digits.
-    List<String> filteredByVersion = removedLast
-        .map((String e) {
-      RegExp regex = RegExp(r'^\d+\.\d+');
-      if (regex.hasMatch(e)) {
-        return e;
+    try{
+      const appStoreUrl = 'https://play.google.com/store/apps/details?id=com.maths.mathsapp'; // Replace with actual Play Store URL
+      if (await canLaunchUrl(Uri.parse(appStoreUrl))) {
+        await launchUrl(Uri.parse(appStoreUrl));
       }
-    }).whereType<String>()
-    .toList();
-    if (filteredByVersion.length == 1) {
-      return filteredByVersion.first;
+    }catch(e){
+      await Utilities.platformChannelandroid.invokeMethod('launchAppStore');
     }
-    return null;
   }
 }

@@ -1,10 +1,11 @@
 package com.maths.mathsapp
 
 import android.content.pm.PackageInfo
+import android.os.Bundle
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.plugin.common.MethodChannel
-import android.os.Bundle
-
+import android.content.Intent;
+import android.net.Uri;
 
 class MainActivity: FlutterActivity() {
     private val CHANNEL = "com.maths.mathsapp/Android"
@@ -18,8 +19,11 @@ class MainActivity: FlutterActivity() {
                     val appVersion = getAppVersion()
                     if (appVersion != null) {
                         result.success(appVersion)
+                    } else if (call.method.equals("launchAppStore")) {
+                        launchAppStore();
+                        result.success(null);
                     } else {
-                        result.error("UNAVAILABLE", "App version not available.", null)
+                        result.notImplemented();
                     }
                 } else {
                     result.notImplemented()
@@ -38,5 +42,14 @@ class MainActivity: FlutterActivity() {
         }
     }
 
+    private fun launchAppStore() {
+        val appStoreUrl = "https://play.google.com/store/apps/details?id=com.TOTALytics.App"
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(appStoreUrl))
+        startActivity(intent)
+    }
+
 }
+
+
+
 

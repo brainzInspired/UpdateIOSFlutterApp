@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "appium": "^2.11.5",
+    "appium-wait-plugin": "^3.0.2",
+    "install": "^0.13.0",
+    "plugin": "^0.3.3"
+  }
+}
